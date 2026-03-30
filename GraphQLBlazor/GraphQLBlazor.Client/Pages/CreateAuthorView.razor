@@ -1,0 +1,83 @@
+﻿@page "/CreateAuthorView"
+@using BlazorBootstrap
+@using GraphQLClient.DataAccess
+@using GraphQL.Client.DataAccess.Model
+
+@inject NavigationManager NavigationManager
+
+<h3>Создание автора</h3>
+
+<div class="row">
+    <EditForm Model="@createAuthor" OnValidSubmit="@CreateButtonClick">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            Имя:<InputText id="firstName" @bind-Value="createAuthor.FirstName"
+                           class="form-control" />
+        </div>
+
+        <div class="form-group">
+            Фамилия:<InputText id="lastName" @bind-Value="createAuthor.LastName"
+                               class="form-control" />
+        </div>
+
+        <div class="form-group">
+            Отчество:<InputText id="middleName" @bind-Value="createAuthor.MiddleName"
+                                class="form-control" />
+        </div>
+
+        <div class="form-group">
+            Email:<InputText id="email" @bind-Value="createAuthor.Email"
+                             class="form-control" />
+        </div>
+
+        <div class="form-group">
+            Телефон:<InputText id="phone" @bind-Value="createAuthor.Phone"
+                               class="form-control" />
+        </div>
+
+        <div class="form-group">
+            Возраст:<InputNumber id="age" @bind-Value="createAuthor.Age"
+                                 class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Создать</button>
+    </EditForm>
+</div>
+
+<a href="/AuthorView"><i class="bi bi-backspace"></i></a>
+
+@code
+{
+    private CreateAuthorModel createAuthorReturnModel = new CreateAuthorModel();
+    private CreateAuthorModel createAuthor = new CreateAuthorModel();
+
+    private async Task CreateButtonClick()
+    {
+        try
+        {
+            string middleNameValue = string.IsNullOrEmpty(createAuthor.MiddleName)
+                ? "null"
+                : $"\"{createAuthor.MiddleName}\"";
+
+            string query = $"mutation{{createAuthor(" +
+                          $"firstName: \"{createAuthor.FirstName}\", " +
+                          $"lastName: \"{createAuthor.LastName}\", " +
+                          $"middleName: {middleNameValue}, " +
+                          $"email: \"{createAuthor.Email}\", " +
+                          $"phone: \"{createAuthor.Phone}\", " +
+                          $"age: {createAuthor.Age}" +
+                          $"){{authorId, firstName, lastName, email, age}}}}";
+
+            string graphQLQueryType = "createAuthor";
+            var result = await Mutation.ExceuteMutationAsyn<CreateAuthorModel>(graphQLQueryType, query);
+
+            NavigationManager.NavigateTo("/AuthorView");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+}

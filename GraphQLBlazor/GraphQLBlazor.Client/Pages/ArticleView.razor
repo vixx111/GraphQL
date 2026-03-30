@@ -1,0 +1,107 @@
+﻿@page "/ArticleView"
+@using BlazorBootstrap
+@using GraphQLClient.DataAccess
+@using GraphQL.Client.DataAccess.Model
+@using System.ComponentModel.DataAnnotations
+@using System.Drawing
+
+@inject NavigationManager NavigationManager
+
+<h3>Список статей</h3>
+@if (AllArticles.Count == 0)
+{
+    <p><em>Loading ....</em></p>
+}
+else
+{
+    <Grid TItem="Article"
+          Class="table table-hover table-bordered table-striped"
+          DataProvider="ArticlesDataProvider"
+          AllowPaging="true"
+          AllowFiltering="true"
+          AllowSorting="true"
+          AutoHidePaging="true"
+          PageSize="10"
+          PageSizeSelectorVisible="true"
+          PageSizeSelectorItems="@(new int[] { 5, 10, 20 })"
+          Responsive="true">
+        <GridColumns>
+            <GridColumn TItem="Article" HeaderText="ID статьи" PropertyName="ArticleId" SortKeySelector="item => item.ArticleId" TextAlignment="Alignment.Center">
+                @context.ArticleId
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Название статьи" PropertyName="Title" SortKeySelector="item => item.Title">
+                @context.Title
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Дата публикации" PropertyName="PublicationDate" SortKeySelector="item => item.PublicationDate" TextAlignment="Alignment.Center">
+                @context.PublicationDate.ToShortDateString()
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Номер журнала" PropertyName="JournalNumber" SortKeySelector="item => item.JournalNumber" TextAlignment="Alignment.Center">
+                @context.JournalNumber
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Автор" PropertyName="AuthorName" SortKeySelector="item => item.Author!.LastName">
+                @context.Author?.FirstName @context.Author?.LastName
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Рубрика" PropertyName="CategoryName" SortKeySelector="item => item.Category!.Name">
+                @context.Category?.Name
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Редактирование" PropertyName="ArticleId" Filterable="false" TextAlignment="Alignment.Center">
+                <a href="/EditArticle/@context.ArticleId"><img src="images/edit.png" class="imgEmployer" /></a>
+            </GridColumn>
+            <GridColumn TItem="Article" HeaderText="Удаление" PropertyName="ArticleId" Filterable="false" TextAlignment="Alignment.Center">
+                <a href="/DeleteArticle/@context.ArticleId"><img src="images/delete.png" class="imgEmployer" /></a>
+            </GridColumn>
+        </GridColumns>
+    </Grid>
+    <a href="/CreateArticle" class="btn btn-primary">Создать статью</a>
+}
+
+@code {
+    private List<Article> AllArticles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string completeQuery = @"query {
+                allArticles {
+                    articleId
+                    title
+                    content
+                    publicationDate
+                    journalNumber
+                    authorId
+                    categoryId
+                    feeId
+                    author {
+                        authorId
+                        firstName
+                        lastName
+                        email
+                    }
+                    category {
+                        categoryId
+                        name
+                        description
+                    }
+                    fee {
+                        feeId
+                        amount
+                        status
+                    }
+                }
+            }";
+            string graphQLQueryType = "allArticles";
+            var result = await Query.ExceuteQueryReturnListAsyn<Article>(graphQLQueryType, completeQuery);
+            AllArticles = result;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    private async Task<GridDataProviderResult<Article>> ArticlesDataProvider(GridDataProviderRequest<Article> request)
+    {
+        return await Task.FromResult(request.ApplyTo(AllArticles));
+    }
+}

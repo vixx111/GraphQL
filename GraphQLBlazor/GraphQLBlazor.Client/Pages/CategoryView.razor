@@ -1,0 +1,110 @@
+﻿@page "/CategoryView"
+@using BlazorBootstrap
+@using GraphQLClient.DataAccess
+@using GraphQL.Client.DataAccess.Model
+@using System.ComponentModel.DataAnnotations
+@using System.Drawing
+
+@inject NavigationManager NavigationManager
+
+<h3>Список рубрик</h3>
+@if (AllCategories.Count == 0)
+{
+    <p><em>Loading ....</em></p>
+}
+else
+{
+    <Grid TItem="CategoryReturnModel"
+          Class="table table-hover table-bordered table-striped"
+          DataProvider="CategoriesDataProvider"
+          AllowPaging="true"
+          AllowFiltering="true"
+          AllowSorting="true"
+          AutoHidePaging="true"
+          PageSize="10"
+          PageSizeSelectorVisible="true"
+          PageSizeSelectorItems="@(new int[] { 5, 10, 20 })"
+          Responsive="true">
+        <GridColumns>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="ID рубрики"
+                        PropertyName="CategoryId"
+                        SortKeySelector="item => item.CategoryId"
+                        TextAlignment="Alignment.Center">
+                @context.CategoryId
+            </GridColumn>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="Название рубрики"
+                        PropertyName="Name"
+                        SortKeySelector="item => item.Name">
+                @context.Name
+            </GridColumn>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="Описание"
+                        PropertyName="Description"
+                        SortKeySelector="item => item.Description">
+                @(context.Description?.Length > 50 ? context.Description.Substring(0, 50) + "..." : context.Description)
+            </GridColumn>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="Количество статей"
+                        PropertyName="ArticlesCount"
+                        SortKeySelector="item => item.Articles!.Count"
+                        TextAlignment="Alignment.Center">
+                @context.Articles?.Count
+            </GridColumn>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="Редактирование"
+                        PropertyName="CategoryId"
+                        Filterable="false"
+                        TextAlignment="Alignment.Center">
+                <a href="/EditCategory/@context.CategoryId">
+                    <img src="images/edit.png" class="imgEmployer" />
+                </a>
+            </GridColumn>
+            <GridColumn TItem="CategoryReturnModel"
+                        HeaderText="Удаление"
+                        PropertyName="CategoryId"
+                        Filterable="false"
+                        TextAlignment="Alignment.Center">
+                <a href="/DeleteCategory/@context.CategoryId">
+                    <img src="images/delete.png" class="imgEmployer" />
+                </a>
+            </GridColumn>
+        </GridColumns>
+    </Grid>
+    <a href="/CreateCategory" class="btn btn-primary">Создать рубрику</a>
+}
+
+@code {
+    private List<CategoryReturnModel> AllCategories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string completeQuery = @"query {
+                allCategories {
+                    categoryId
+                    name
+                    description
+                    articles {
+                        articleId
+                        title
+                    }
+                }
+            }";
+            string graphQLQueryType = "allCategories";
+            var result = await Query.ExceuteQueryReturnListAsyn<CategoryReturnModel>(graphQLQueryType, completeQuery);
+            AllCategories = result;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    private async Task<GridDataProviderResult<CategoryReturnModel>> CategoriesDataProvider(GridDataProviderRequest<CategoryReturnModel> request)
+    {
+        return await Task.FromResult(request.ApplyTo(AllCategories));
+    }
+}

@@ -1,0 +1,96 @@
+﻿@page "/EditAuthorView/{Id:int}"
+@using GraphQLClient.DataAccess
+@using GraphQL.Client.DataAccess.Model
+
+@inject NavigationManager NavigationManager
+
+<h3>Редактирование автора</h3>
+
+<EditForm Model="@author" OnValidSubmit="@EditButtonClick">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        Имя:<InputText id="firstName" @bind-Value="author.FirstName"
+                       class="form-control" />
+    </div>
+
+    <div class="form-group">
+        Фамилия:<InputText id="lastName" @bind-Value="author.LastName"
+                           class="form-control" />
+    </div>
+
+    <div class="form-group">
+        Отчество:<InputText id="middleName" @bind-Value="author.MiddleName"
+                            class="form-control" />
+    </div>
+
+    <div class="form-group">
+        Email:<InputText id="email" @bind-Value="author.Email"
+                         class="form-control" />
+    </div>
+
+    <div class="form-group">
+        Телефон:<InputText id="phone" @bind-Value="author.Phone"
+                           class="form-control" />
+    </div>
+
+    <div class="form-group">
+        Возраст:<InputNumber id="age" @bind-Value="author.Age"
+                             class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Сохранить</button>
+</EditForm>
+
+<a href="/AuthorView">Назад</a>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private AuthorReturnModel author = new AuthorReturnModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        string completeQuery = $"query{{authorById(authorId:{Id}){{authorId,firstName,lastName,middleName,email,phone,age}}}}";
+        string graphQLQueryType = "authorById";
+        var result = await Query.ExceuteQueryAsyn<AuthorReturnModel>(graphQLQueryType, completeQuery);
+
+        if (result == null)
+        {
+            NavigationManager.NavigateTo("/AuthorView");
+        }
+
+        author = result!;
+    }
+
+    private async Task EditButtonClick()
+    {
+        try
+        {
+            string middleNameValue = string.IsNullOrEmpty(author.MiddleName)
+                ? "null"
+                : $"\"{author.MiddleName}\"";
+
+            string query = $"mutation{{updateAuthor(" +
+                          $"authorId:{author.AuthorId}, " +
+                          $"firstName:\"{author.FirstName}\", " +
+                          $"lastName:\"{author.LastName}\", " +
+                          $"middleName:{middleNameValue}, " +
+                          $"email:\"{author.Email}\", " +
+                          $"phone:\"{author.Phone}\", " +
+                          $"age:{author.Age}" +
+                          $"){{authorId,firstName,lastName,email,age}}}}";
+
+            string graphQLQueryType = "updateAuthor";
+            var result = await Mutation.ExceuteMutationAsyn<CreateAuthorModel>(graphQLQueryType, query);
+
+            NavigationManager.NavigateTo("/AuthorView");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+}

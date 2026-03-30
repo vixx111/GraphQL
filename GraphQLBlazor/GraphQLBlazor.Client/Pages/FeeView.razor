@@ -1,0 +1,79 @@
+﻿@page "/FeeView"
+@using BlazorBootstrap
+@using GraphQLClient.DataAccess
+@using GraphQL.Client.DataAccess.Model
+@using System.ComponentModel.DataAnnotations
+@using System.Drawing
+
+@inject NavigationManager NavigationManager
+
+<h3>Список гонораров</h3>
+@if (AllFees.Count == 0)
+{
+    <p><em>Loading ....</em></p>
+}
+else
+{
+    <Grid TItem="Fee"
+          Class="table table-hover table-bordered table-striped"
+          DataProvider="FeesDataProvider"
+          AllowPaging="true"
+          AllowFiltering="true"
+          AllowSorting="true"
+          AutoHidePaging="true"
+          PageSize="10"
+          PageSizeSelectorVisible="true"
+          PageSizeSelectorItems="@(new int[] { 5,10,20 })"
+          Responsive="true">
+        <GridColumns>
+            <GridColumn TItem="Fee" HeaderText="ID гонорара" PropertyName="FeeId" SortKeySelector="item => item.FeeId" TextAlignment="Alignment.Center">
+                @context.FeeId
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Сумма" PropertyName="Amount" SortKeySelector="item => item.Amount" TextAlignment="Alignment.Center">
+                @context.Amount
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Дата платежа" PropertyName="PaymentDate" SortKeySelector="item => item.PaymentDate" TextAlignment="Alignment.Center">
+                @context.PaymentDate.ToShortDateString()
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Статус" PropertyName="Status" SortKeySelector="item => item.Status" TextAlignment="Alignment.Center">
+                @context.Status
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Описание" PropertyName="Description" SortKeySelector="item => item.Description">
+                @context.Description
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Автор" PropertyName="AuthorName" SortKeySelector="item => item.Author!.LastName">
+                @context.Author?.FirstName @context.Author?.LastName
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Редактирование" PropertyName="FeeId" Filterable="false" TextAlignment="Alignment.Center">
+                <a href="/EditFee/@context.FeeId"><img src="images/edit.png" class="imgEmployer" /></a>
+            </GridColumn>
+            <GridColumn TItem="Fee" HeaderText="Удаление" PropertyName="FeeId" Filterable="false" TextAlignment="Alignment.Center">
+                <a href="/DeleteFee/@context.FeeId"><img src="images/delete.png" class="imgEmployer" /></a>
+            </GridColumn>
+        </GridColumns>
+    </Grid>
+    <a href="/CreateFee" class="btn btn-primary">Создать гонорар</a>
+}
+
+@code {
+    private List<Fee> AllFees = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string completeQuery = "query{allFees{feeId,amount,paymentDate,status,description,authorId,author{firstName,lastName}}}";
+            string graphQLQueryType = "allFees";
+            var result = await Query.ExceuteQueryReturnListAsyn<Fee>(graphQLQueryType, completeQuery);
+            AllFees = result;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+    private async Task<GridDataProviderResult<Fee>> FeesDataProvider(GridDataProviderRequest<Fee> request)
+    {
+        return await Task.FromResult(request.ApplyTo(AllFees));
+    }
+}

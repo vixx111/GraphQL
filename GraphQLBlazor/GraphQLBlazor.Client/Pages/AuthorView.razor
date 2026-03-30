@@ -1,0 +1,150 @@
+﻿@page "/AuthorView"
+@using BlazorBootstrap
+@using GraphQL.Client.DataAccess.Model
+@using GraphQLClient.DataAccess
+@using System.ComponentModel.DataAnnotations
+
+@inject NavigationManager NavigationManager
+
+<h3>Список авторов</h3>
+@if (AllAuthors.Count == 0)
+{
+    <p><em>Loading ....</em></p>
+}
+else
+{
+    <Grid TItem="AuthorReturnModel"
+          Class="table table-hover table-bordered table-striped"
+          DataProvider="AuthorsDataProvider"
+          AllowPaging="true"
+          AllowFiltering="true"
+          AllowSorting="true"
+          AutoHidePaging="true"
+          PageSize="10"
+          PageSizeSelectorVisible="true"
+          PageSizeSelectorItems="@(new int[] { 5, 10, 20 })"
+          Responsive="true">
+        <GridColumns>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="ID автора"
+                        PropertyName="AuthorId"
+                        SortKeySelector="item => item.AuthorId"
+                        TextAlignment="Alignment.Center">
+                @context.AuthorId
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Имя"
+                        PropertyName="FirstName"
+                        SortKeySelector="item => item.FirstName">
+                @context.FirstName
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Фамилия"
+                        PropertyName="LastName"
+                        SortKeySelector="item => item.LastName">
+                @context.LastName
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Отчество"
+                        PropertyName="MiddleName"
+                        SortKeySelector="item => item.MiddleName">
+                @(context.MiddleName ?? "—")
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Email"
+                        PropertyName="Email"
+                        SortKeySelector="item => item.Email">
+                @context.Email
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Телефон"
+                        PropertyName="Phone"
+                        SortKeySelector="item => item.Phone">
+                @context.Phone
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Возраст"
+                        PropertyName="Age"
+                        SortKeySelector="item => item.Age"
+                        TextAlignment="Alignment.Center">
+                @context.Age
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Статьи"
+                        PropertyName="Articles"
+                        SortKeySelector="item => item.Articles!.Count"
+                        TextAlignment="Alignment.Center">
+                @context.Articles?.Count
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Платежи"
+                        PropertyName="Fees"
+                        SortKeySelector="item => item.Fees!.Count"
+                        TextAlignment="Alignment.Center">
+                @context.Fees?.Count
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Редактирование"
+                        PropertyName="AuthorId"
+                        Filterable="false"
+                        TextAlignment="Alignment.Center">
+                <a href="/EditAuthor/@context.AuthorId">
+                    <img src="images/edit.png" class="imgEmployer" />
+                </a>
+            </GridColumn>
+            <GridColumn TItem="AuthorReturnModel"
+                        HeaderText="Удаление"
+                        PropertyName="AuthorId"
+                        Filterable="false"
+                        TextAlignment="Alignment.Center">
+                <a href="/DeleteAuthor/@context.AuthorId">
+                    <img src="images/delete.png" class="imgEmployer" />
+                </a>
+            </GridColumn>
+        </GridColumns>
+    </Grid>
+    <a href="/CreateAuthor" class="btn btn-primary">Создать автора</a>
+}
+
+@code {
+    private List<AuthorReturnModel> AllAuthors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string completeQuery = @"query {
+                allAuthors {
+                    authorId
+                    firstName
+                    lastName
+                    middleName
+                    email
+                    phone
+                    age
+                    articles {
+                        articleId
+                        title
+                    }
+                    fees {
+                        feeId
+                        amount
+                        status
+                    }
+                }
+            }";
+            string graphQLQueryType = "allAuthors";
+            var result = await Query.ExecuteQueryReturnListAsync<AuthorReturnModel>(graphQLQueryType, completeQuery);
+            AllAuthors = result;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    private async Task<GridDataProviderResult<AuthorReturnModel>> AuthorsDataProvider(GridDataProviderRequest<AuthorReturnModel> request)
+    {
+        return await Task.FromResult(request.ApplyTo(AllAuthors));
+    }
+}
